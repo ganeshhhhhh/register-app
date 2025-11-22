@@ -13,8 +13,7 @@ pipeline {
         DOCKER_PASS = "dockerhub"             // Jenkins credentials ID for Docker Hub
         IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
         IMAGE_TAG  = "${RELEASE}-${BUILD_NUMBER}"
-
-        JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN")
+        // JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN")   <-- remove/comment this
     }
 
     stages {
@@ -28,7 +27,7 @@ pipeline {
             steps {
                 git branch: 'main',
                     credentialsId: 'github',
-                    url: 'https://github.com/Ashfaque-9x/register-app'
+                    url: 'https://github.com/ganeshhhhhh/register-app'
             }
         }
 
@@ -68,13 +67,8 @@ pipeline {
                     def docker_image
 
                     docker.withRegistry('', DOCKER_PASS) {
-                        // Build image with tag
                         docker_image = docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
-
-                        // Push specific tag
                         docker_image.push()
-
-                        // Also push as 'latest'
                         docker_image.push('latest')
                     }
                 }
