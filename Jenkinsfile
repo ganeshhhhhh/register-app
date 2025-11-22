@@ -6,6 +6,17 @@ pipeline {
         maven 'Maven3'
     }
 
+    environment {
+        APP_NAME   = "register-app-pipeline"
+        RELEASE    = "1.0.0"
+        DOCKER_USER = "ockerlitud"
+        DOCKER_PASS = "dockerhub"             // Jenkins credentials ID for Docker Hub
+        IMAGE_NAME = "${DOCKER_USER}/${APP_NAME}"
+        IMAGE_TAG  = "${RELEASE}-${BUILD_NUMBER}"
+
+        JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN")
+    }
+
     stages {
         stage("Cleanup Workspace") {
             steps {
@@ -15,7 +26,9 @@ pipeline {
 
         stage("Checkout from SCM") {
             steps {
-                git branch: 'main', credentialsId: 'github', url: 'https://github.com/ganeshhhhhh/register-app.git'
+                git branch: 'main',
+                    credentialsId: 'github',
+                    url: 'https://github.com/Ashfaque-9x/register-app'
             }
         }
 
@@ -44,12 +57,37 @@ pipeline {
         stage("Quality Gate") {
             steps {
                 script {
-                    // optional: wrap in timeout to avoid hanging forever
-                    // timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: false, credentialsId: 'jenkins-sonarqube-token'
-                    // }
                 }
             }
+        }
+
+        stage("Build & Push Docker Image") {
+            steps {
+                script {
+                    def docker_image
+
+                    docker.withRegistry('', DOCKER_PASS) {
+                        // Build image with tag
+                        docker_image = docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+
+                        // Push specific tag
+                        docker_image.push()
+
+                        // Also push as 'latest'
+                        docker_image.push('latest')
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Pipeline completed successfully"
+        }
+        failure {
+            echo "❌ Pipeline failed – check logs"
         }
     }
 }
